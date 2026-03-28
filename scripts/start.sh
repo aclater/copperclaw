@@ -14,10 +14,19 @@
 
 set -euo pipefail
 
-# Always run from the project root regardless of where the script is invoked from
-cd "$(dirname "$0")/.."
-
-OVERRIDE_FILE=".compose.platform-override.yml"
+# Locate project root by walking up from this script until we find podman-compose.yml
+_find_project_root() {
+    local dir
+    dir="$(cd "$(dirname "$0")" && pwd)"
+    while [ "$dir" != "/" ]; do
+        [ -f "$dir/podman-compose.yml" ] && { echo "$dir"; return 0; }
+        dir="$(dirname "$dir")"
+    done
+    echo "ERROR: could not locate project root (no podman-compose.yml found)" >&2
+    exit 1
+}
+PROJECT_ROOT="$(_find_project_root)"
+OVERRIDE_FILE="$PROJECT_ROOT/.compose.platform-override.yml"
 PREFLIGHT_ERRORS=0
 PREFLIGHT_WARNINGS=0
 
@@ -161,29 +170,28 @@ preflight() {
     MISSING_JARS=0
     for svc in isr-tasking collection allsource-analyst target-nomination \
                legal-review commander execution bda develop cot-gateway; do
-        JAR_DIR="agents/${svc}-service/target"
-        if ! ls "${JAR_DIR}"/*.jar &>/dev/null 2>&1; then
+        if ! ls "$PROJECT_ROOT/agents/${svc}-service/target"/*.jar &>/dev/null 2>&1; then
             MISSING_JARS=$((MISSING_JARS + 1))
         fi
     done
     for svc in state-service sse-bridge-service; do
-        if ! ls "${svc}/target"/*.jar &>/dev/null 2>&1; then
+        if ! ls "$PROJECT_ROOT/${svc}/target"/*.jar &>/dev/null 2>&1; then
             MISSING_JARS=$((MISSING_JARS + 1))
         fi
     done
     if [ "$MISSING_JARS" -gt 0 ]; then
         warn "$MISSING_JARS service(s) have not been compiled. Build them first:"
-        echo "         mvn install -f shared-java/pom.xml"
-        echo "         mvn package -f parent-pom.xml -DskipTests"
+        echo "         mvn install -f $PROJECT_ROOT/shared-java/pom.xml"
+        echo "         mvn package -f $PROJECT_ROOT/parent-pom.xml -DskipTests"
     else
         ok "All service JARs present"
     fi
 
     # --- Python deps for operator-service ---
     info "operator-service Python dependencies"
-    if [ -f operator-service/requirements.txt ]; then
+    if [ -f "$PROJECT_ROOT/operator-service/requirements.txt" ]; then
         DEPS_OK=false
-        if [ -d operator-service/.venv ] && operator-service/.venv/bin/python -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1; then
+        if [ -d "$PROJECT_ROOT/operator-service/.venv" ] && "$PROJECT_ROOT/operator-service/.venv/bin/python" -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1; then
             DEPS_OK=true
         elif [ -n "$PYTHON_CMD" ] && $PYTHON_CMD -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1; then
             DEPS_OK=true
@@ -192,7 +200,7 @@ preflight() {
             ok "Python deps installed"
         else
             warn "operator-service Python dependencies may not be installed."
-            echo "         $PYTHON_CMD -m pip install -r operator-service/requirements.txt"
+            echo "         $PYTHON_CMD -m pip install -r $PROJECT_ROOT/operator-service/requirements.txt"
         fi
     fi
 
@@ -268,12 +276,11 @@ preflight() {
 
     # --- .env ---
     info ".env file"
-    if [ -f .env ]; then
+    if [ -f "$PROJECT_ROOT/.env" ]; then
         ok ".env exists"
-        # Check for anthropic key if backend is set to anthropic
-        LLM_BACKEND_VAL=$(grep -E '^LLM_BACKEND=' .env 2>/dev/null | cut -d= -f2 | tr -d '"' || true)
+        LLM_BACKEND_VAL=$(grep -E '^LLM_BACKEND=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 | tr -d '"' || true)
         if [ "${LLM_BACKEND_VAL:-ramalama}" = "anthropic" ]; then
-            ANTHROPIC_KEY=$(grep -E '^ANTHROPIC_API_KEY=' .env 2>/dev/null | cut -d= -f2 | tr -d '"' || true)
+            ANTHROPIC_KEY=$(grep -E '^ANTHROPIC_API_KEY=' "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2 | tr -d '"' || true)
             if [ -z "$ANTHROPIC_KEY" ]; then
                 err "LLM_BACKEND=anthropic but ANTHROPIC_API_KEY is not set in .env."
             else
@@ -281,7 +288,7 @@ preflight() {
             fi
         fi
     else
-        cp .env.example .env
+        cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
         warn ".env was missing — created from .env.example."
         echo "         Review .env and set LLM_BACKEND / ANTHROPIC_API_KEY before continuing."
     fi
@@ -418,12 +425,12 @@ preflight
 # ---------------------------------------------------------------------------
 # Launch
 # ---------------------------------------------------------------------------
-COMPOSE_ARGS="-f podman-compose.yml"
+COMPOSE_ARGS="-f $PROJECT_ROOT/podman-compose.yml"
 if [ "$USE_OVERRIDE" = "true" ] && [ -f "$OVERRIDE_FILE" ]; then
     COMPOSE_ARGS="$COMPOSE_ARGS -f $OVERRIDE_FILE"
 fi
 
-LOG_DIR="logs"
+LOG_DIR="$PROJECT_ROOT/logs"
 LOG_FILE="$LOG_DIR/copperclaw.log"
 mkdir -p "$LOG_DIR"
 

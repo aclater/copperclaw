@@ -2,7 +2,17 @@
 # OPERATION COPPERCLAW — Stop script
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+_find_project_root() {
+    local dir
+    dir="$(cd "$(dirname "$0")" && pwd)"
+    while [ "$dir" != "/" ]; do
+        [ -f "$dir/podman-compose.yml" ] && { echo "$dir"; return 0; }
+        dir="$(dirname "$dir")"
+    done
+    echo "ERROR: could not locate project root (no podman-compose.yml found)" >&2
+    exit 1
+}
+PROJECT_ROOT="$(_find_project_root)"
 
 COMPOSE_CMD=""
 if command -v podman-compose &>/dev/null; then
@@ -16,8 +26,8 @@ else
     exit 1
 fi
 
-OVERRIDE_FILE=".compose.platform-override.yml"
-COMPOSE_ARGS="-f podman-compose.yml"
+OVERRIDE_FILE="$PROJECT_ROOT/.compose.platform-override.yml"
+COMPOSE_ARGS="-f $PROJECT_ROOT/podman-compose.yml"
 [ -f "$OVERRIDE_FILE" ] && COMPOSE_ARGS="$COMPOSE_ARGS -f $OVERRIDE_FILE"
 
 echo "Stopping COPPERCLAW..."
@@ -25,7 +35,7 @@ echo "Stopping COPPERCLAW..."
 $COMPOSE_CMD $COMPOSE_ARGS down "$@"
 
 # Kill any lingering tail on the log
-PID_FILE="logs/compose.pid"
+PID_FILE="$PROJECT_ROOT/logs/compose.pid"
 if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
