@@ -46,14 +46,8 @@ services:
         until bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
           echo 'Waiting for Kafka...'; sleep 2;
         done
-        for topic in \
-          copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection \
-          copperclaw.assessment copperclaw.nomination copperclaw.legal-review \
-          copperclaw.authorization copperclaw.execution copperclaw.bda \
-          copperclaw.develop copperclaw.cycle-state copperclaw.commander-log \
-          copperclaw.cot-in copperclaw.cot-out; do
-          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
-            --topic "$topic" --partitions 1 --replication-factor 1
+        for topic in copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection copperclaw.assessment copperclaw.nomination copperclaw.legal-review copperclaw.authorization copperclaw.execution copperclaw.bda copperclaw.develop copperclaw.cycle-state copperclaw.commander-log copperclaw.cot-in copperclaw.cot-out; do
+          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$topic" --partitions 1 --replication-factor 1
         done
         echo 'All 14 topics created.'
     restart: "no"
@@ -66,6 +60,11 @@ services:
       POSTGRES_PASSWORD: copperclaw
       POSTGRES_DB: copperclaw
     ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U copperclaw -d copperclaw"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   ramalama:
     image: quay.io/ramalama/ramalama:latest
@@ -207,8 +206,13 @@ services:
   state-service:
     build: state-service
     ports: ["8089:8089"]
-    depends_on: [kafka-setup, postgres]
+    depends_on:
+      kafka-setup:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     networks: [copperclaw]
+    restart: on-failure
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       DB_HOST: postgres
