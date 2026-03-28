@@ -407,11 +407,36 @@ if [ "$USE_OVERRIDE" = "true" ] && [ -f "$OVERRIDE_FILE" ]; then
     COMPOSE_ARGS="$COMPOSE_ARGS -f $OVERRIDE_FILE"
 fi
 
+LOG_DIR="logs"
+LOG_FILE="$LOG_DIR/copperclaw.log"
+mkdir -p "$LOG_DIR"
+
+# Rotate logs: keep last 5, each capped at 50 MB
+if [ -f "$LOG_FILE" ]; then
+    for i in 4 3 2 1; do
+        [ -f "$LOG_FILE.$i" ] && mv "$LOG_FILE.$i" "$LOG_FILE.$((i+1))"
+    done
+    mv "$LOG_FILE" "$LOG_FILE.1"
+fi
+
 echo "  Runtime  : $COMPOSE_CMD"
 echo "  Override : $USE_OVERRIDE"
+echo "  Log file : $LOG_FILE"
 echo ""
-echo "Starting COPPERCLAW..."
+echo "Starting COPPERCLAW... (tailing log — Ctrl+C stops the tail, not the stack)"
+echo "  To stop the stack: ./scripts/stop.sh  or  podman-compose down"
 echo ""
 
 # shellcheck disable=SC2086
-exec $COMPOSE_CMD $COMPOSE_ARGS up "$@"
+$COMPOSE_CMD $COMPOSE_ARGS up "$@" >> "$LOG_FILE" 2>&1 &
+COMPOSE_PID=$!
+
+# Give compose a moment to fail fast if something is immediately wrong
+sleep 2
+if ! kill -0 "$COMPOSE_PID" 2>/dev/null; then
+    echo -e "  ${red}Compose exited immediately — check $LOG_FILE for errors.${nc}"
+    exit 1
+fi
+
+echo "$COMPOSE_PID" > "$LOG_DIR/compose.pid"
+tail -f "$LOG_FILE"

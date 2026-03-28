@@ -14,3 +14,6 @@ frontend/dist/
 
 # Auto-generated platform compose override
 .compose.platform-override.yml
+
+# Runtime logs
+logs/
