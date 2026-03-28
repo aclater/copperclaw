@@ -150,3 +150,12 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       STATE_SERVICE_URL: http://state-service:8089
       SSE_BRIDGE_URL: http://sse-bridge-service:8090
+
+  frontend:
+    build: frontend
+    ports: ["3000:3000"]
+    depends_on: [operator-service, sse-bridge-service]
+    networks: [copperclaw]
+    environment:
+      VITE_OPERATOR_URL: http://operator-service:8000
+      VITE_SSE_URL: http://sse-bridge-service:8090

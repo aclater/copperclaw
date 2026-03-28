@@ -9,3 +9,5 @@ venv/
 *.egg-info/
 dist/
 .quarkus/
+node_modules/
+frontend/dist/
