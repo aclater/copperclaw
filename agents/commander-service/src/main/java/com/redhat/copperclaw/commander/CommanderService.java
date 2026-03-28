@@ -1,6 +1,6 @@
 package com.redhat.copperclaw.commander;
 
-import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.Response;
@@ -27,7 +27,7 @@ public class CommanderService {
     ObjectMapper objectMapper;
 
     @Inject
-    AnthropicChatModel model;
+    ChatLanguageModel model;
 
     @ConfigProperty(name = "copperclaw.agent.system-prompt-path")
     String systemPromptPath;

@@ -4,6 +4,9 @@ networks:
   copperclaw:
     driver: bridge
 
+volumes:
+  ramalama-models:
+
 services:
   zookeeper:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
@@ -29,86 +32,148 @@ services:
       POSTGRESQL_DATABASE: copperclaw
     ports: ["5432:5432"]
 
+  ramalama:
+    image: quay.io/ramalama/ramalama:latest
+    ports: ["8080:8080"]
+    volumes:
+      - ramalama-models:/root/.local/share/ramalama
+    networks: [copperclaw]
+    # NVIDIA CUDA (current):
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # AMD ROCm (future — swap deploy block above
+    # for these device mounts when migrating):
+    #   devices:
+    #     - /dev/kfd:/dev/kfd
+    #     - /dev/dri:/dev/dri
+    command: >
+      serve quay.io/ramalama/qwen2.5:14b
+      --port 8080
+      --host 0.0.0.0
+
+  ramalama-pull:
+    image: quay.io/ramalama/ramalama:latest
+    depends_on: [ramalama]
+    networks: [copperclaw]
+    entrypoint: >
+      sh -c "sleep 8 &&
+             RAMALAMA_TRANSPORT=oci
+             ramalama pull
+             quay.io/ramalama/qwen2.5:14b"
+    restart: "no"
+
   isr-tasking-service:
     build: agents/isr-tasking-service
     ports: ["8081:8081"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   collection-service:
     build: agents/collection-service
     ports: ["8082:8082"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   allsource-analyst-service:
     build: agents/allsource-analyst-service
     ports: ["8083:8083"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   target-nomination-service:
     build: agents/target-nomination-service
     ports: ["8084:8084"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   legal-review-service:
     build: agents/legal-review-service
     ports: ["8091:8091"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   commander-service:
     build: agents/commander-service
     ports: ["8085:8085"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   execution-service:
     build: agents/execution-service
     ports: ["8086:8086"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   bda-service:
     build: agents/bda-service
     ports: ["8087:8087"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   develop-service:
     build: agents/develop-service
     ports: ["8088:8088"]
-    depends_on: [kafka]
+    depends_on: [kafka, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
   cot-gateway-service:
     build: agents/cot-gateway-service
@@ -123,7 +188,7 @@ services:
   state-service:
     build: state-service
     ports: ["8089:8089"]
-    depends_on: [kafka, postgres]
+    depends_on: [kafka, postgres, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -143,11 +208,14 @@ services:
   operator-service:
     build: operator-service
     ports: ["8000:8000"]
-    depends_on: [kafka, state-service, sse-bridge-service]
+    depends_on: [kafka, state-service, sse-bridge-service, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_BACKEND: ${LLM_BACKEND:-ramalama}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
+      RAMALAMA_BASE_URL: http://ramalama:8080/v1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       STATE_SERVICE_URL: http://state-service:8089
       SSE_BRIDGE_URL: http://sse-bridge-service:8090
 

@@ -322,6 +322,46 @@ The following were added beyond the original Phase 2 schema library:
 
 ---
 
+## LLM Backend Configuration
+
+COPPERCLAW defaults to local RamaLama inference.
+RamaLama is Red Hat's container-native LLM runtime —
+models are OCI artifacts, runtime is rootless Podman,
+deployment target is OpenShift.
+
+| Variable | Default | Description |
+|---|---|---|
+| LLM_BACKEND | ramalama | ramalama or anthropic |
+| LLM_MODEL | qwen2.5:14b | model name |
+| RAMALAMA_BASE_URL | http://localhost:8080/v1 | RamaLama API |
+| ANTHROPIC_API_KEY | (empty) | required if backend=anthropic |
+
+### GPU support
+Current: NVIDIA CUDA — deploy.resources.reservations
+in podman-compose.yml.
+Future AMD ROCm migration: swap deploy block for
+/dev/kfd and /dev/dri device mounts. No code changes
+required — same OpenAI-compatible API surface.
+
+### Local development
+If RamaLama runs natively on host (not in compose):
+  RAMALAMA_BASE_URL=http://localhost:8080/v1
+
+If services run in compose and RamaLama on host:
+  RAMALAMA_BASE_URL=http://host.containers.internal:8080/v1
+
+### Air-gapped / briefing room
+Set LLM_BACKEND=ramalama. Model pulled as OCI artifact
+on first start. No internet required after pull.
+
+### Anthropic API (opt-in, highest quality)
+Set LLM_BACKEND=anthropic and ANTHROPIC_API_KEY.
+Recommended for operator LLM if network available.
+Hybrid config: set per-service for local agents
++ cloud operator.
+
+---
+
 ## Local Development
 
 ### Prerequisites
