@@ -18,12 +18,15 @@ services:
 
   kafka:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
-    command: >
-      sh -c "bin/kafka-server-start.sh config/server.properties
-        --override listeners=PLAINTEXT://:9092
-        --override advertised.listeners=PLAINTEXT://kafka:9092
-        --override zookeeper.connect=zookeeper:2181
-        --override auto.create.topics.enable=false"
+    command:
+      - sh
+      - -c
+      - |
+        bin/kafka-server-start.sh config/server.properties \
+          --override listeners=PLAINTEXT://:9092 \
+          --override advertised.listeners=PLAINTEXT://kafka:9092 \
+          --override zookeeper.connect=zookeeper:2181 \
+          --override auto.create.topics.enable=false
     depends_on: [zookeeper]
     ports: ["9092:9092"]
     networks: [copperclaw]
@@ -36,22 +39,23 @@ services:
     networks: [copperclaw]
     tmpfs:
       - /opt/kafka/logs
-    command: >
-      sh -c "
+    command:
+      - sh
+      - -c
+      - |
         until bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
           echo 'Waiting for Kafka...'; sleep 2;
-        done &&
-        for topic in
-          copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection
-          copperclaw.assessment copperclaw.nomination copperclaw.legal-review
-          copperclaw.authorization copperclaw.execution copperclaw.bda
-          copperclaw.develop copperclaw.cycle-state copperclaw.commander-log
+        done
+        for topic in \
+          copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection \
+          copperclaw.assessment copperclaw.nomination copperclaw.legal-review \
+          copperclaw.authorization copperclaw.execution copperclaw.bda \
+          copperclaw.develop copperclaw.cycle-state copperclaw.commander-log \
           copperclaw.cot-in copperclaw.cot-out; do
-          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists
-            --topic \$topic --partitions 1 --replication-factor 1;
-        done &&
+          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+            --topic "$topic" --partitions 1 --replication-factor 1
+        done
         echo 'All 14 topics created.'
-      "
     restart: "no"
 
   postgres:
@@ -77,8 +81,10 @@ services:
     #   devices:
     #     - /dev/kfd:/dev/kfd
     #     - /dev/dri:/dev/dri
-    command: >
-      sh -c "RAMALAMA_TRANSPORT=oci ramalama serve quay.io/ramalama/qwen2.5:14b --port 8080 --host 0.0.0.0"
+    command:
+      - sh
+      - -c
+      - RAMALAMA_TRANSPORT=ollama ramalama serve qwen2.5:14b --port 8080 --host 0.0.0.0
 
   isr-tasking-service:
     build: agents/isr-tasking-service
