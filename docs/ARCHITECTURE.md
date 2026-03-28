@@ -336,12 +336,25 @@ deployment target is OpenShift.
 | RAMALAMA_BASE_URL | http://localhost:8080/v1 | RamaLama API |
 | ANTHROPIC_API_KEY | (empty) | required if backend=anthropic |
 
-### GPU support
-Current: NVIDIA CUDA — deploy.resources.reservations
-in podman-compose.yml.
-Future AMD ROCm migration: swap deploy block for
-/dev/kfd and /dev/dri device mounts. No code changes
-required — same OpenAI-compatible API surface.
+### GPU support and platform detection
+
+Use `./scripts/start.sh` rather than calling `podman-compose up` directly.
+The script detects the host platform and writes a compose override
+(`.compose.platform-override.yml`) before starting the stack:
+
+| Platform | Detection method | Override action |
+|---|---|---|
+| Linux NVIDIA | `nvidia-smi` responds | No override — default compose used |
+| Linux AMD | `rocm-smi` responds or `/dev/kfd` present | Clears NVIDIA deploy block; mounts `/dev/kfd`, `/dev/dri`; adds `video`/`render` groups |
+| macOS Apple Silicon | `uname -m` = `arm64` | Clears NVIDIA deploy block (RamaLama uses Metal/MLX); swaps RHEL9 postgres for `postgres:15` |
+| macOS Intel | `uname -s` = Darwin, `arm64` absent | Same as Apple Silicon; warns that CPU inference is slow |
+| Linux CPU only | No GPU detected | Clears NVIDIA deploy block; warns about performance |
+
+The override file is auto-generated on every `start.sh` invocation and should
+not be committed to version control (it is in `.gitignore`).
+
+No code changes are required when switching GPU backends — all paths use the
+same OpenAI-compatible API surface exposed by RamaLama.
 
 ### Local development
 If RamaLama runs natively on host (not in compose):
@@ -367,8 +380,8 @@ Hybrid config: set per-service for local agents
 ### Prerequisites
 - Java 21 (JDK), Maven 3.9+
 - Python 3.11+
-- Podman + podman-compose
-- `ANTHROPIC_API_KEY` environment variable
+- Podman + podman-compose, or Docker Desktop
+- `ANTHROPIC_API_KEY` — optional; required only if `LLM_BACKEND=anthropic`
 
 ### Build all Quarkus services
 ```bash
@@ -382,9 +395,19 @@ mvn package -f parent-pom.xml -DskipTests
 ### Start locally
 ```bash
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
-podman-compose up
+# Edit .env — set LLM_BACKEND and optionally ANTHROPIC_API_KEY
+./scripts/start.sh
 ```
+
+`start.sh` auto-detects the platform (macOS Apple Silicon, macOS Intel, Linux
+NVIDIA, Linux AMD ROCm, Linux CPU-only) and generates a compose override before
+starting. See the GPU support section above for details.
+
+**macOS users:** Docker Desktop is generally more stable than Podman on macOS.
+`start.sh` detects and uses whichever runtime is available.
+
+**Intel Mac / CPU-only Linux:** Set `LLM_BACKEND=anthropic` in `.env` —
+CPU inference on a 14B model is too slow to be usable.
 
 ### Service port map for local debugging
 ```bash

@@ -58,12 +58,30 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full reference.
 
 ---
 
+## Platform Compatibility
+
+| Platform | LLM Backend | Notes |
+|---|---|---|
+| Linux + NVIDIA GPU | RamaLama CUDA | Default — works out of the box |
+| Linux + AMD GPU | RamaLama ROCm | Auto-configured by `start.sh` |
+| Linux CPU only | Anthropic (recommended) | `start.sh` warns; set `LLM_BACKEND=anthropic` |
+| macOS Apple Silicon | RamaLama Metal/MLX | Auto-configured by `start.sh` |
+| macOS Intel | Anthropic (recommended) | CPU-only inference is too slow for 14B model |
+
+`./scripts/start.sh` detects your platform automatically and writes a compose override before starting the stack. You do not need to edit `podman-compose.yml` directly.
+
+> **macOS note:** The default PostgreSQL image (`registry.access.redhat.com/rhel9/postgresql-15`) has no ARM64 variant. `start.sh` swaps it for `postgres:15` (Docker Hub official) on all Mac platforms automatically.
+
+> **Framework Desktop note:** The Framework Desktop uses AMD Ryzen with integrated or discrete AMD graphics. `start.sh` will detect `/dev/kfd` or `rocm-smi` and configure the ROCm path automatically.
+
+---
+
 ## Prerequisites
 
 - Java 21 JDK
 - Maven 3.9+
 - Python 3.11+
-- Podman + podman-compose (or Docker / docker-compose)
+- Podman + podman-compose, or Docker Desktop
 - `ANTHROPIC_API_KEY` — optional; only required if `LLM_BACKEND=anthropic`
 
 ---
@@ -88,6 +106,14 @@ cp .env.example .env
 ```
 
 ### 3. Run
+
+```bash
+./scripts/start.sh
+```
+
+`start.sh` detects your platform, generates a compose override if needed, and calls the appropriate compose runtime. Pass any `podman-compose up` flags through — e.g. `./scripts/start.sh --build` or `./scripts/start.sh -d`.
+
+Alternatively, run directly if you are on Linux with NVIDIA:
 
 ```bash
 podman-compose up

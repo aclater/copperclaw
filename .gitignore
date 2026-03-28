@@ -11,3 +11,6 @@ dist/
 .quarkus/
 node_modules/
 frontend/dist/
+
+# Auto-generated platform compose override
+.compose.platform-override.yml
