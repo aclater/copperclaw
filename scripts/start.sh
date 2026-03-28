@@ -224,6 +224,19 @@ preflight() {
             echo "       Then re-run this script."
         fi
 
+        info "SELinux container_use_devices boolean"
+        if command -v getsebool &>/dev/null; then
+            if getsebool container_use_devices 2>/dev/null | grep -q "on$"; then
+                ok "container_use_devices is on"
+            else
+                err "SELinux is blocking container access to NVIDIA devices."
+                echo "       Enable with:"
+                echo "         sudo setsebool -P container_use_devices 1"
+            fi
+        else
+            ok "SELinux not present — skipping"
+        fi
+
     fi
 
     if [ "$OS" = "Linux" ] && [ "${GPU:-cpu}" = "amd" ]; then
