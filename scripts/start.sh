@@ -14,6 +14,9 @@
 
 set -euo pipefail
 
+# Always run from the project root regardless of where the script is invoked from
+cd "$(dirname "$0")/.."
+
 OVERRIDE_FILE=".compose.platform-override.yml"
 PREFLIGHT_ERRORS=0
 PREFLIGHT_WARNINGS=0
