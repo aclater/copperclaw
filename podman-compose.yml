@@ -47,7 +47,7 @@ services:
           echo 'Waiting for Kafka...'; sleep 2;
         done
         for topic in copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection copperclaw.assessment copperclaw.nomination copperclaw.legal-review copperclaw.authorization copperclaw.execution copperclaw.bda copperclaw.develop copperclaw.cycle-state copperclaw.commander-log copperclaw.cot-in copperclaw.cot-out; do
-          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$topic" --partitions 1 --replication-factor 1
+          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1
         done
         echo 'All 14 topics created.'
     restart: "no"
