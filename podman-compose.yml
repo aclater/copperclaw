@@ -13,23 +13,54 @@ services:
     command: ["sh", "-c", "bin/zookeeper-server-start.sh config/zookeeper.properties"]
     ports: ["2181:2181"]
     networks: [copperclaw]
+    tmpfs:
+      - /opt/kafka/logs
 
   kafka:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
-    command: ["sh", "-c", "bin/kafka-server-start.sh config/server.properties --override listeners=PLAINTEXT://:9092 --override advertised.listeners=PLAINTEXT://kafka:9092 --override zookeeper.connect=zookeeper:2181"]
+    command: >
+      sh -c "bin/kafka-server-start.sh config/server.properties
+        --override listeners=PLAINTEXT://:9092
+        --override advertised.listeners=PLAINTEXT://kafka:9092
+        --override zookeeper.connect=zookeeper:2181
+        --override auto.create.topics.enable=false"
     depends_on: [zookeeper]
     ports: ["9092:9092"]
     networks: [copperclaw]
-    environment:
-      KAFKA_CREATE_TOPICS: "copperclaw.isr-tasking:1:1,copperclaw.collection:1:1,copperclaw.assessment:1:1,copperclaw.nomination:1:1,copperclaw.legal-review:1:1,copperclaw.authorization:1:1,copperclaw.execution:1:1,copperclaw.bda:1:1,copperclaw.develop:1:1,copperclaw.cycle-state:1:1,copperclaw.commander-log:1:1,copperclaw.operator-commands:1:1,copperclaw.cot-in:1:1,copperclaw.cot-out:1:1"
+    tmpfs:
+      - /opt/kafka/logs
+
+  kafka-setup:
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.0
+    depends_on: [kafka]
+    networks: [copperclaw]
+    tmpfs:
+      - /opt/kafka/logs
+    command: >
+      sh -c "
+        until bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+          echo 'Waiting for Kafka...'; sleep 2;
+        done &&
+        for topic in
+          copperclaw.operator-commands copperclaw.isr-tasking copperclaw.collection
+          copperclaw.assessment copperclaw.nomination copperclaw.legal-review
+          copperclaw.authorization copperclaw.execution copperclaw.bda
+          copperclaw.develop copperclaw.cycle-state copperclaw.commander-log
+          copperclaw.cot-in copperclaw.cot-out; do
+          bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists
+            --topic \$topic --partitions 1 --replication-factor 1;
+        done &&
+        echo 'All 14 topics created.'
+      "
+    restart: "no"
 
   postgres:
-    image: registry.access.redhat.com/rhel9/postgresql-15:latest
+    image: docker.io/postgres:15
     networks: [copperclaw]
     environment:
-      POSTGRESQL_USER: copperclaw
-      POSTGRESQL_PASSWORD: copperclaw
-      POSTGRESQL_DATABASE: copperclaw
+      POSTGRES_USER: copperclaw
+      POSTGRES_PASSWORD: copperclaw
+      POSTGRES_DB: copperclaw
     ports: ["5432:5432"]
 
   ramalama:
@@ -37,40 +68,22 @@ services:
     ports: ["8080:8080"]
     volumes:
       - ramalama-models:/root/.local/share/ramalama
+      - /etc/cdi:/etc/cdi:ro
     networks: [copperclaw]
-    # NVIDIA CUDA (current):
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # AMD ROCm (future — swap deploy block above
-    # for these device mounts when migrating):
+    # NVIDIA CUDA (current) — uses CDI device "nvidia.com/gpu=0":
+    devices:
+      - "nvidia.com/gpu=0"
+    # AMD ROCm (future — replace devices block above with):
     #   devices:
     #     - /dev/kfd:/dev/kfd
     #     - /dev/dri:/dev/dri
     command: >
-      serve quay.io/ramalama/qwen2.5:14b
-      --port 8080
-      --host 0.0.0.0
-
-  ramalama-pull:
-    image: quay.io/ramalama/ramalama:latest
-    depends_on: [ramalama]
-    networks: [copperclaw]
-    entrypoint: >
-      sh -c "sleep 8 &&
-             RAMALAMA_TRANSPORT=oci
-             ramalama pull
-             quay.io/ramalama/qwen2.5:14b"
-    restart: "no"
+      sh -c "RAMALAMA_TRANSPORT=oci ramalama serve quay.io/ramalama/qwen2.5:14b --port 8080 --host 0.0.0.0"
 
   isr-tasking-service:
     build: agents/isr-tasking-service
     ports: ["8081:8081"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -82,7 +95,7 @@ services:
   collection-service:
     build: agents/collection-service
     ports: ["8082:8082"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -94,7 +107,7 @@ services:
   allsource-analyst-service:
     build: agents/allsource-analyst-service
     ports: ["8083:8083"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -106,7 +119,7 @@ services:
   target-nomination-service:
     build: agents/target-nomination-service
     ports: ["8084:8084"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -118,7 +131,7 @@ services:
   legal-review-service:
     build: agents/legal-review-service
     ports: ["8091:8091"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -130,7 +143,7 @@ services:
   commander-service:
     build: agents/commander-service
     ports: ["8085:8085"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -142,7 +155,7 @@ services:
   execution-service:
     build: agents/execution-service
     ports: ["8086:8086"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -154,7 +167,7 @@ services:
   bda-service:
     build: agents/bda-service
     ports: ["8087:8087"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -166,7 +179,7 @@ services:
   develop-service:
     build: agents/develop-service
     ports: ["8088:8088"]
-    depends_on: [kafka, ramalama]
+    depends_on: [kafka-setup, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -178,7 +191,7 @@ services:
   cot-gateway-service:
     build: agents/cot-gateway-service
     ports: ["8092:8092"]
-    depends_on: [kafka]
+    depends_on: [kafka-setup]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -188,7 +201,7 @@ services:
   state-service:
     build: state-service
     ports: ["8089:8089"]
-    depends_on: [kafka, postgres, ramalama]
+    depends_on: [kafka-setup, postgres]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -200,7 +213,7 @@ services:
   sse-bridge-service:
     build: sse-bridge-service
     ports: ["8090:8090"]
-    depends_on: [kafka]
+    depends_on: [kafka-setup]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -208,7 +221,7 @@ services:
   operator-service:
     build: operator-service
     ports: ["8000:8000"]
-    depends_on: [kafka, state-service, sse-bridge-service, ramalama]
+    depends_on: [kafka-setup, state-service, sse-bridge-service, ramalama]
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
