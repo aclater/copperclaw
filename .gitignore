@@ -1,0 +1,11 @@
+target/
+*.class
+*.jar
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+dist/
+.quarkus/

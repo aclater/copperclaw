@@ -13,3 +13,6 @@ class KafkaTopics:
     CYCLE_STATE       = "copperclaw.cycle-state"
     COMMANDER_LOG     = "copperclaw.commander-log"
     OPERATOR_COMMANDS = "copperclaw.operator-commands"
+    LEGAL_REVIEW      = "copperclaw.legal-review"
+    COT_IN            = "copperclaw.cot-in"
+    COT_OUT           = "copperclaw.cot-out"

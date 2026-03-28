@@ -13,4 +13,7 @@ public final class KafkaTopics {
     public static final String CYCLE_STATE       = "copperclaw.cycle-state";
     public static final String COMMANDER_LOG     = "copperclaw.commander-log";
     public static final String OPERATOR_COMMANDS = "copperclaw.operator-commands";
+    public static final String LEGAL_REVIEW      = "copperclaw.legal-review";
+    public static final String COT_IN            = "copperclaw.cot-in";
+    public static final String COT_OUT           = "copperclaw.cot-out";
 }

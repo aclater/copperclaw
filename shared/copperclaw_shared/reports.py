@@ -138,3 +138,19 @@ class DevelopLead(ReportBase):
     cycle_recommendation: str = Field(..., description="Develop agent's recommendation for next cycle action.")
     domex_products: List[str] = Field(default_factory=list, description="List of DOMEX products generated (documents, devices, media).")
     dissemination_list: List[str] = Field(default_factory=list, description="Agencies and cells to which DOMEX products and leads are disseminated.")
+
+
+class LegalReviewAssessment(ReportBase):
+    phase: CyclePhase = CyclePhase.FINISH
+    tnp_id: str = Field(..., description="report_id of the TargetNominationPackage reviewed.")
+    target_codename: TargetCodename = Field(..., description="HPTL codename of the reviewed target.")
+    legal_cleared: bool = Field(..., description="True if no blocking ROE/LOAC issues exist and execution may proceed. False if blocking_issues is non-empty.")
+    blocking_issues: List[str] = Field(default_factory=list, description="ROE or LOAC violations that prevent execution. If non-empty, legal_cleared must be False.")
+    warnings: List[str] = Field(default_factory=list, description="Advisory flags that do not block execution but require commander awareness.")
+    military_necessity_assessment: str = Field(..., description="Assessment of military necessity: does the target offer definite military advantage per FM 3-60 §1-4?")
+    distinction_assessment: str = Field(..., description="Assessment of distinction: is the target a legitimate military objective, clearly distinguished from civilians?")
+    proportionality_assessment: str = Field(..., description="Assessment of proportionality: expected collateral harm vs anticipated concrete and direct military advantage.")
+    precautions_assessment: str = Field(..., description="Assessment of precautionary measures applied per AJP-3.9 and ROE Alpha-7 Section 1.")
+    roe_compliance_verified: bool = Field(..., description="Whether all fields of the TNP ROEChecklist were satisfied by the legal review.")
+    rtl_constraints_confirmed: bool = Field(False, description="For RTL targets (OILCAN): whether the engagement window and civilian absence conditions have been confirmed. Always False for non-RTL targets.")
+    legal_narrative: str = Field(..., description="Claude-generated narrative of the legal review, written in JAG voice. Addresses all four LOAC principles and any RTL/CDE constraints.", min_length=50)

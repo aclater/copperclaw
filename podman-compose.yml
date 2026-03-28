@@ -1,0 +1,152 @@
+version: "3.8"
+
+networks:
+  copperclaw:
+    driver: bridge
+
+services:
+  zookeeper:
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.0
+    command: ["sh", "-c", "bin/zookeeper-server-start.sh config/zookeeper.properties"]
+    ports: ["2181:2181"]
+    networks: [copperclaw]
+
+  kafka:
+    image: quay.io/strimzi/kafka:latest-kafka-3.7.0
+    command: ["sh", "-c", "bin/kafka-server-start.sh config/server.properties --override listeners=PLAINTEXT://:9092 --override advertised.listeners=PLAINTEXT://kafka:9092 --override zookeeper.connect=zookeeper:2181"]
+    depends_on: [zookeeper]
+    ports: ["9092:9092"]
+    networks: [copperclaw]
+    environment:
+      KAFKA_CREATE_TOPICS: "copperclaw.isr-tasking:1:1,copperclaw.collection:1:1,copperclaw.assessment:1:1,copperclaw.nomination:1:1,copperclaw.legal-review:1:1,copperclaw.authorization:1:1,copperclaw.execution:1:1,copperclaw.bda:1:1,copperclaw.develop:1:1,copperclaw.cycle-state:1:1,copperclaw.commander-log:1:1,copperclaw.operator-commands:1:1,copperclaw.cot-in:1:1,copperclaw.cot-out:1:1"
+
+  postgres:
+    image: registry.access.redhat.com/rhel9/postgresql-15:latest
+    networks: [copperclaw]
+    environment:
+      POSTGRESQL_USER: copperclaw
+      POSTGRESQL_PASSWORD: copperclaw
+      POSTGRESQL_DATABASE: copperclaw
+    ports: ["5432:5432"]
+
+  isr-tasking-service:
+    build: agents/isr-tasking-service
+    ports: ["8081:8081"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  collection-service:
+    build: agents/collection-service
+    ports: ["8082:8082"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  allsource-analyst-service:
+    build: agents/allsource-analyst-service
+    ports: ["8083:8083"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  target-nomination-service:
+    build: agents/target-nomination-service
+    ports: ["8084:8084"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  legal-review-service:
+    build: agents/legal-review-service
+    ports: ["8091:8091"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  commander-service:
+    build: agents/commander-service
+    ports: ["8085:8085"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  execution-service:
+    build: agents/execution-service
+    ports: ["8086:8086"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  bda-service:
+    build: agents/bda-service
+    ports: ["8087:8087"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  develop-service:
+    build: agents/develop-service
+    ports: ["8088:8088"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+  cot-gateway-service:
+    build: agents/cot-gateway-service
+    ports: ["8092:8092"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      COT_SIMULATION_MODE: ${COT_SIMULATION_MODE:-true}
+      COT_SIMULATION_INTERVAL_SECONDS: ${COT_SIMULATION_INTERVAL_SECONDS:-30}
+
+  state-service:
+    build: state-service
+    ports: ["8089:8089"]
+    depends_on: [kafka, postgres]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: postgres
+      DB_USER: copperclaw
+      DB_PASSWORD: copperclaw
+      DB_NAME: copperclaw
+
+  sse-bridge-service:
+    build: sse-bridge-service
+    ports: ["8090:8090"]
+    depends_on: [kafka]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  operator-service:
+    build: operator-service
+    ports: ["8000:8000"]
+    depends_on: [kafka, state-service, sse-bridge-service]
+    networks: [copperclaw]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      STATE_SERVICE_URL: http://state-service:8089
+      SSE_BRIDGE_URL: http://sse-bridge-service:8090
