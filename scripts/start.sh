@@ -157,13 +157,13 @@ preflight() {
     info "Compiled services (Maven build)"
     MISSING_JARS=0
     for svc in isr-tasking collection allsource-analyst target-nomination \
-               legal-review commander execution bda develop; do
+               legal-review commander execution bda develop cot-gateway; do
         JAR_DIR="agents/${svc}-service/target"
         if ! ls "${JAR_DIR}"/*.jar &>/dev/null 2>&1; then
             MISSING_JARS=$((MISSING_JARS + 1))
         fi
     done
-    for svc in state-service sse-bridge-service cot-gateway-service; do
+    for svc in state-service sse-bridge-service; do
         if ! ls "${svc}/target"/*.jar &>/dev/null 2>&1; then
             MISSING_JARS=$((MISSING_JARS + 1))
         fi
