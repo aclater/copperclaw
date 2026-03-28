@@ -14,7 +14,18 @@ const SOURCE_COLOR: Record<string, string> = {
 
 const SOURCE_TYPES = ['SIGINT', 'IMINT', 'HUMINT', 'ACOUSTIC'] as const
 
+const MOCK_EVENTS: CollectionEvent[] = [
+  { id: 'c1', source_type: 'SIGINT',   timestamp_zulu: '', confidence_weight: 6, target_id: 'TGT-ECHO-001'  },
+  { id: 'c2', source_type: 'IMINT',    timestamp_zulu: '', confidence_weight: 9, target_id: 'TGT-ECHO-001'  },
+  { id: 'c3', source_type: 'HUMINT',   timestamp_zulu: '', confidence_weight: 7, target_id: 'TGT-ECHO-001'  },
+  { id: 'c4', source_type: 'ACOUSTIC', timestamp_zulu: '', confidence_weight: 4, target_id: 'TGT-GAMMA-002' },
+  { id: 'c5', source_type: 'SIGINT',   timestamp_zulu: '', confidence_weight: 3, target_id: 'TGT-ECHO-002'  },
+]
+
 export function SeismoPanel({ events }: SeismoPanelProps) {
+  const isMock = !events || events.length === 0
+  const displayEvents = isMock ? MOCK_EVENTS : events
+
   return (
     <div style={{
       background: 'var(--bg-panel)',
@@ -23,6 +34,7 @@ export function SeismoPanel({ events }: SeismoPanelProps) {
       padding: '8px 10px',
       display: 'flex',
       flexDirection: 'column',
+      flex: '0 0 160px',
     }}>
       {/* Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -39,11 +51,23 @@ export function SeismoPanel({ events }: SeismoPanelProps) {
         }}>
           SEISMO
         </span>
+        {isMock && (
+          <span style={{
+            fontSize: 8,
+            background: 'var(--amber-bg)',
+            color: 'var(--amber)',
+            border: '1px solid var(--amber)',
+            borderRadius: 10,
+            padding: '0 5px',
+          }}>
+            sim
+          </span>
+        )}
       </div>
 
       {/* Rows per source type */}
       {SOURCE_TYPES.map(srcType => {
-        const typeEvents = events.filter(e => e.source_type === srcType)
+        const typeEvents = displayEvents.filter(e => e.source_type === srcType)
         return (
           <div key={srcType} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <div style={{

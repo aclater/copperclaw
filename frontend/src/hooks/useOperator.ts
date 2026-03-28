@@ -4,7 +4,11 @@ import type { OperatorMessage } from '../types'
 export function useOperator() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [messages, setMessages] = useState<OperatorMessage[]>([])
+  const [messages, setMessages] = useState<OperatorMessage[]>([{
+    role: 'system',
+    content: 'Operator interface online. COPPERCLAW targeting cycle ready. Type a command to begin or ask a question about the current cycle state.',
+    timestamp_zulu: new Date().toISOString()
+  }])
 
   const transmit = useCallback(async () => {
     if (!input.trim() || sending) return
@@ -33,7 +37,7 @@ export function useOperator() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: 'Operator service unreachable — command not transmitted.',
+        content: 'Operator service unreachable — check that operator-service is running on port 8000.',
         timestamp_zulu: new Date().toISOString()
       }])
     } finally {

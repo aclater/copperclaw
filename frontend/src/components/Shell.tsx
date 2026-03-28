@@ -9,8 +9,7 @@ import { HoldStrip } from './HoldStrip'
 import { DecisionLog } from './DecisionLog'
 import { AgentMesh } from './AgentMesh'
 import { SeismoPanel } from './SeismoPanel'
-import { CycleTimer } from './CycleTimer'
-import { OperatorInput } from './OperatorInput'
+import { OperatorChat } from './OperatorChat'
 
 interface ShellProps {
   state: CycleState
@@ -24,7 +23,7 @@ interface ShellProps {
 
 export function Shell({
   state, connected,
-  operatorInput, setOperatorInput, transmit, sending,
+  operatorInput, setOperatorInput, transmit, sending, messages,
 }: ShellProps) {
   const awaitingCount = state.awaiting_commander ? 1 : 0
   const awaitingTarget = state.active_target_codename ?? '—'
@@ -37,7 +36,7 @@ export function Shell({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateRows: '38px 1fr 64px',
+      gridTemplateRows: '38px 1fr',
       height: '100vh',
       overflow: 'hidden',
       background: 'var(--bg-shell)',
@@ -48,14 +47,14 @@ export function Shell({
       {/* Main content */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '180px 1fr 200px',
+        gridTemplateColumns: '160px 1fr 260px',
         gap: 6,
         padding: 6,
         overflow: 'hidden',
         minHeight: 0,
       }}>
         {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', minHeight: 0 }}>
           <MetricCard
             value={awaitingCount}
             label="Target awaiting auth"
@@ -79,6 +78,7 @@ export function Shell({
             }
           />
           <PirPanel pirs={state.pir_satisfaction} />
+          <DecisionLog entries={state.commander_log} />
         </div>
 
         {/* Center column */}
@@ -92,33 +92,22 @@ export function Shell({
             codename={holdTarget?.codename}
             tnpId={state.hold_tnp_id}
           />
-          <DecisionLog entries={state.commander_log} />
         </div>
 
         {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', minHeight: 0 }}>
           <AgentMesh agents={state.agents} />
           <SeismoPanel events={state.recent_collection} />
-          <CycleTimer elapsed_seconds={state.elapsed_seconds} />
+          <OperatorChat
+            input={operatorInput}
+            setInput={setOperatorInput}
+            transmit={transmit}
+            sending={sending}
+            messages={messages}
+            cycleId={state.cycle_id}
+            activeTarget={state.active_target_codename}
+          />
         </div>
-      </div>
-
-      {/* Bottom operator input */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        background: 'var(--bg-panel)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 4px',
-      }}>
-        <OperatorInput
-          input={operatorInput}
-          setInput={setOperatorInput}
-          transmit={transmit}
-          sending={sending}
-          cycleId={state.cycle_id}
-          codename={state.active_target_codename}
-        />
       </div>
     </div>
   )
