@@ -12,7 +12,9 @@ services:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
     command: ["sh", "-c", "bin/zookeeper-server-start.sh config/zookeeper.properties"]
     ports: ["2181:2181"]
-    networks: [copperclaw]
+    networks:
+      copperclaw:
+        aliases: [zookeeper]
     tmpfs:
       - /opt/kafka/logs
 
@@ -29,14 +31,18 @@ services:
           --override auto.create.topics.enable=false
     depends_on: [zookeeper]
     ports: ["9092:9092"]
-    networks: [copperclaw]
+    networks:
+      copperclaw:
+        aliases: [kafka]
     tmpfs:
       - /opt/kafka/logs
 
   kafka-setup:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
     depends_on: [kafka]
-    networks: [copperclaw]
+    networks:
+      copperclaw:
+        aliases: [kafka-setup]
     tmpfs:
       - /opt/kafka/logs
     command:
@@ -54,7 +60,9 @@ services:
 
   postgres:
     image: docker.io/postgres:15
-    networks: [copperclaw]
+    networks:
+      copperclaw:
+        aliases: [postgres]
     environment:
       POSTGRES_USER: copperclaw
       POSTGRES_PASSWORD: copperclaw
@@ -72,7 +80,9 @@ services:
     volumes:
       - ramalama-models:/root/.local/share/ramalama
       - /etc/cdi:/etc/cdi:ro
-    networks: [copperclaw]
+    networks:
+      copperclaw:
+        aliases: [ramalama]
     # NVIDIA CUDA (current) — uses CDI device "nvidia.com/gpu=0":
     devices:
       - "nvidia.com/gpu=0"
@@ -244,7 +254,7 @@ services:
 
   frontend:
     build: frontend
-    ports: ["3000:3000"]
+    ports: ["3000:8080"]
     depends_on: [operator-service, sse-bridge-service]
     networks: [copperclaw]
     environment:
