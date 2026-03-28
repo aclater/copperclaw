@@ -179,12 +179,17 @@ preflight() {
     # --- Python deps for operator-service ---
     info "operator-service Python dependencies"
     if [ -f operator-service/requirements.txt ]; then
-        if [ -d operator-service/.venv ] || \
-           ([ -n "$PYTHON_CMD" ] && $PYTHON_CMD -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1); then
+        DEPS_OK=false
+        if [ -d operator-service/.venv ] && operator-service/.venv/bin/python -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1; then
+            DEPS_OK=true
+        elif [ -n "$PYTHON_CMD" ] && $PYTHON_CMD -c "import fastapi, anthropic, aiokafka" &>/dev/null 2>&1; then
+            DEPS_OK=true
+        fi
+        if [ "$DEPS_OK" = "true" ]; then
             ok "Python deps installed"
         else
             warn "operator-service Python dependencies may not be installed."
-            echo "         cd operator-service && pip install -r requirements.txt"
+            echo "         $PYTHON_CMD -m pip install -r operator-service/requirements.txt"
         fi
     fi
 
