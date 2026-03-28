@@ -1,0 +1,148 @@
+from __future__ import annotations
+from enum import Enum
+
+
+class ClassificationMarking(str, Enum):
+    COSMIC_INDIGO = "COSMIC INDIGO"
+    COSMIC_INDIGO_REL = "COSMIC INDIGO // REL KESTREL COALITION"
+    UNCLASSIFIED_EXERCISE = "UNCLASSIFIED // EXERCISE"
+
+
+class TargetID(str, Enum):
+    ECHO_001 = "TGT-ECHO-001"
+    ECHO_002 = "TGT-ECHO-002"
+    GAMMA_001 = "TGT-GAMMA-001"
+    DELTA_001 = "TGT-DELTA-001"
+    GAMMA_002 = "TGT-GAMMA-002"
+
+
+class TargetCodename(str, Enum):
+    VARNAK = "VARNAK"
+    KAZMER = "KAZMER"
+    IRONBOX = "IRONBOX"
+    OILCAN = "OILCAN"
+    STONEPILE = "STONEPILE"
+
+
+class ComponentID(str, Enum):
+    GAMMA = "GAMMA"
+    DELTA = "DELTA"
+    ECHO = "ECHO"
+    UNKNOWN = "UNKNOWN"
+
+
+class ISRAsset(str, Enum):
+    RAVEN_1 = "RAVEN-1"
+    RAVEN_2 = "RAVEN-2"
+    KITE_7 = "KITE-7"
+    EAGLE_SIGINT = "EAGLE-SIGINT"
+    SHADOW_COMMS = "SHADOW-COMMS"
+    JTAC_TEAM = "JTAC-TEAM"
+
+
+class PIRNumber(str, Enum):
+    PIR_001 = "PIR-001"
+    PIR_002 = "PIR-002"
+    PIR_003 = "PIR-003"
+    PIR_004 = "PIR-004"
+    PIR_NEW = "PIR-NEW"
+
+
+class EngagementAuthority(str, Enum):
+    COMKJTF = "COMKJTF"
+    TF_KESTREL_CDR = "TF-KESTREL-CDR"
+    J3_FIRES = "J3-FIRES"
+    DENIED = "DENIED"
+    PENDING = "PENDING"
+
+
+class CyclePhase(str, Enum):
+    FIND = "FIND"
+    FIX = "FIX"
+    FINISH = "FINISH"
+    EXPLOIT = "EXPLOIT"
+    ASSESS = "ASSESS"
+    DEVELOP = "DEVELOP"
+    HOLD = "HOLD"
+    COMPLETE = "COMPLETE"
+
+
+class ConfidenceLevel(str, Enum):
+    HIGH = "HIGH"
+    MODERATE = "MODERATE"
+    LOW = "LOW"
+    UNCONFIRMED = "UNCONFIRMED"
+
+
+class CDETier(str, Enum):
+    CDE_1 = "CDE-1"
+    CDE_2 = "CDE-2"
+    CDE_3 = "CDE-3"
+    CDE_4 = "CDE-4"
+    CDE_5 = "CDE-5"
+    CDE_6 = "CDE-6"
+    NOT_REQUIRED = "NOT-REQUIRED"
+
+
+class EffectType(str, Enum):
+    DESTROY = "DESTROY"
+    NEUTRALISE = "NEUTRALISE"
+    DISRUPT = "DISRUPT"
+    DEGRADE = "DEGRADE"
+    DENY = "DENY"
+    SUPPRESS = "SUPPRESS"
+    DECEIVE = "DECEIVE"
+    DELAY = "DELAY"
+    INTERDICT = "INTERDICT"
+    REMOVE = "REMOVE"
+    EXPLOIT = "EXPLOIT"
+
+
+class IntelSourceType(str, Enum):
+    SIGINT = "SIGINT"
+    HUMINT = "HUMINT"
+    IMINT = "IMINT"
+    OSINT = "OSINT"
+    DOMEX = "DOMEX"
+    ACOUSTIC = "ACOUSTIC"
+    FUSION = "FUSION"
+
+
+class TargetType(str, Enum):
+    PERSONALITY = "PERSONALITY"
+    MATERIEL = "MATERIEL"
+    NODE = "NODE"
+    DUAL_USE = "DUAL_USE"
+    FIRE_POSITION = "FIRE_POSITION"
+    NETWORK = "NETWORK"
+
+
+class ExecutionMethod(str, Enum):
+    PRECISION_STRIKE = "PRECISION-STRIKE"
+    ARTILLERY_FIRE = "ARTILLERY-FIRE"
+    ATTACK_AVIATION = "ATTACK-AVIATION"
+    SOF_DIRECT_ACTION = "SOF-DIRECT-ACTION"
+    NON_KINETIC_EW = "NON-KINETIC-EW"
+    NON_KINETIC_INFLUENCE = "NON-KINETIC-INFLUENCE"
+    SURVEILLANCE_ONLY = "SURVEILLANCE-ONLY"
+
+
+class BDAOutcome(str, Enum):
+    TARGET_DESTROYED = "TARGET-DESTROYED"
+    TARGET_NEUTRALISED = "TARGET-NEUTRALISED"
+    TARGET_DISRUPTED = "TARGET-DISRUPTED"
+    EFFECT_NOT_ACHIEVED = "EFFECT-NOT-ACHIEVED"
+    PARTIAL_EFFECT = "PARTIAL-EFFECT"
+    UNKNOWN = "UNKNOWN"
+    CIVCAS_ASSESSED = "CIVCAS-ASSESSED"
+
+
+class HoldReason(str, Enum):
+    PID_INSUFFICIENT = "PID-INSUFFICIENT"
+    CDE_UNACCEPTABLE = "CDE-UNACCEPTABLE"
+    NSL_PROXIMITY = "NSL-PROXIMITY"
+    ROE_NOT_MET = "ROE-NOT-MET"
+    INTEL_STALE = "INTEL-STALE"
+    LEGAL_REVIEW_REQUIRED = "LEGAL-REVIEW-REQUIRED"
+    COMMANDER_DISCRETION = "COMMANDER-DISCRETION"
+    AWAIT_CIVILIAN_WINDOW = "AWAIT-CIVILIAN-WINDOW"

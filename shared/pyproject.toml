@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "copperclaw-shared"
+version = "1.0.0"
+requires-python = ">=3.11"
+description = "OPERATION COPPERCLAW — shared Pydantic v2 schemas"
+dependencies = ["pydantic>=2.7,<3.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["copperclaw_shared*"]
