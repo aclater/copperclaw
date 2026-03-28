@@ -1,6 +1,6 @@
 # COPPERCLAW
 
-A Red Hat–native simulation of the **F3EAD targeting cycle** (Find–Fix–Finish–Exploit–Assess–Develop) using LLM agents. Built as a reference implementation for sovereign, open-standards-based decision acceleration, compatible with NATO and UK MoD tooling.
+A simulation of the **F3EAD targeting cycle** (Find–Fix–Finish–Exploit–Assess–Develop) using LLM agents. Built as a reference implementation for sovereign, open-standards-based decision acceleration, compatible with NATO and UK MoD tooling.
 
 ---
 
