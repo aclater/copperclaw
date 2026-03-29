@@ -44,7 +44,29 @@ public class LegalReviewService {
     @Channel("cycle-state-out")
     Emitter<String> cycleStateEmitter;
 
+    @Channel("commander-log-out")
+    Emitter<String> commanderLogEmitter;
+
     private String systemPrompt;
+
+    private void publishLog(String cycleId, String level, String message) {
+        try {
+            String entry = String.format(
+                "{\"timestamp_zulu\":\"%s\"," +
+                "\"agent\":\"LEGAL\"," +
+                "\"cycle_id\":\"%s\"," +
+                "\"level\":\"%s\"," +
+                "\"message\":\"%s\"}",
+                java.time.Instant.now().toString(),
+                cycleId,
+                level,
+                message.replace("\"", "'")
+            );
+            commanderLogEmitter.send(entry);
+        } catch (Exception e) {
+            LOG.warnf(e, "LEGAL-REVIEW: Failed to publish commander log entry");
+        }
+    }
 
     private void loadSystemPrompt() {
         try {
@@ -175,6 +197,16 @@ public class LegalReviewService {
                 "status", "COMPLETE",
                 "legal_cleared", legalCleared
             )));
+
+            if (legalCleared) {
+                publishLog(cycleId, "LEGAL",
+                    "TNP " + tnpId + " cleared — " + cdeTier +
+                    " — target " + targetCodename + " (" + targetId + ") approved for engagement");
+            } else {
+                publishLog(cycleId, "LEGAL",
+                    "TNP " + tnpId + " BLOCKED — " +
+                    String.join(", ", blockingIssues));
+            }
 
             LOG.infof("LEGAL-REVIEW: Assessment complete for %s. Cleared: %b. Blocking: %d. Warnings: %d",
                 targetCodename, legalCleared, blockingIssues.size(), warnings.size());

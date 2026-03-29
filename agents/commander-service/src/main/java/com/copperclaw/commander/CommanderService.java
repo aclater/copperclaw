@@ -6,6 +6,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.data.message.AiMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.copperclaw.shared.records.CommanderLogEntry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -14,7 +15,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 
@@ -38,6 +42,9 @@ public class CommanderService {
     @Channel("cycle-state-out")
     Emitter<String> cycleStateEmitter;
 
+    @Channel("commander-log-out")
+    Emitter<String> commanderLogEmitter;
+
     /**
      * In-memory store of pending LegalReviewAssessments awaiting operator decision.
      * Key: target_id, Value: full LegalReviewAssessment JSON string.
@@ -45,6 +52,25 @@ public class CommanderService {
     private final ConcurrentHashMap<String, String> pendingAssessments = new ConcurrentHashMap<>();
 
     private String systemPrompt;
+
+    private void emitCommanderLog(String cycleId, String entryType, String content, String relatedReportId) {
+        try {
+            var entry = new CommanderLogEntry(
+                "CLG-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                LocalDateTime.now(),
+                cycleId,
+                entryType,
+                "COMMANDER",
+                Optional.empty(),
+                content,
+                Optional.ofNullable(relatedReportId),
+                "UNCLASSIFIED//EXERCISE"
+            );
+            commanderLogEmitter.send(objectMapper.writeValueAsString(entry));
+        } catch (Exception e) {
+            LOG.warnf(e, "COMMANDER: Failed to emit commander-log entry");
+        }
+    }
 
     private void loadSystemPrompt() {
         try {
@@ -75,6 +101,11 @@ public class CommanderService {
 
             LOG.infof("COMMANDER: LegalReviewAssessment received for %s (%s). Legal cleared: %b. Cycle paused.",
                 targetId, targetCodename, legalCleared);
+
+            emitCommanderLog(cycleId, "HOLD_ISSUED",
+                "Legal review complete for " + targetCodename + " (" + targetId + "). Legal cleared: " + legalCleared
+                + ". Cycle paused pending COMKJTF authorization.",
+                tnpId);
 
             String holdEvent = objectMapper.writeValueAsString(Map.of(
                 "event_type", "pending_commander_decision",
@@ -156,6 +187,15 @@ public class CommanderService {
 
             var outputNode = objectMapper.readTree(output);
             String cycleId = outputNode.path("cycle_id").asText("UNKNOWN");
+            boolean authorized = outputNode.path("authorized").asBoolean(false);
+            String entryType = authorized ? "AUTHORIZATION_ISSUED" : "HOLD_ORDER";
+            String guidance = outputNode.path("commanders_guidance").asText(
+                outputNode.path("hold_explanation").asText(""));
+            emitCommanderLog(cycleId, entryType,
+                (authorized ? "Engagement authorized for target " : "Hold order issued for target ")
+                + targetId + ". " + guidance,
+                null);
+
             cycleStateEmitter.send(objectMapper.writeValueAsString(Map.of(
                 "event_type", "agent_output",
                 "producing_agent", "COMMANDER",

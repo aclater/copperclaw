@@ -93,6 +93,12 @@ json_has_key() {
 }
 
 # ── Container discovery ──────────────────────────────────────────────────────
+# Portable container name lookup — works with _1, -1, or bare suffix
+get_container() {
+  podman ps --format '{{.Names}}' 2>/dev/null \
+    | grep "copperclaw[_-]${1}" | head -1
+}
+
 KAFKA_CONT=$(podman ps --format '{{.Names}}' 2>/dev/null \
   | grep "copperclaw_kafka" | grep -v "zookeeper\|setup" | head -1)
 POSTGRES_CONT=$(podman ps --format '{{.Names}}' 2>/dev/null \
@@ -457,28 +463,32 @@ echo "── SECTION 5: Log Scan for Errors ────────────
 
 # 5.1 Error count per service container
 for svc in \
-  copperclaw_isr-tasking-service_1 \
-  copperclaw_collection-service_1 \
-  copperclaw_allsource-analyst-service_1 \
-  copperclaw_target-nomination-service_1 \
-  copperclaw_commander-service_1 \
-  copperclaw_execution-service_1 \
-  copperclaw_bda-service_1 \
-  copperclaw_develop-service_1 \
-  copperclaw_state-service_1 \
-  copperclaw_sse-bridge-service_1 \
-  copperclaw_legal-review-service_1 \
-  copperclaw_cot-gateway-service_1 \
-  copperclaw_operator-service_1; do
-  ERR_COUNT=$(podman logs "$svc" --tail 100 2>&1 \
-    | grep -cE " ERROR |Exception|FAILED" || true)
-  SHORT="${svc#copperclaw_}"; SHORT="${SHORT%_1}"
-  if [ "$ERR_COUNT" -eq 0 ]; then
-    check "5.1  $SHORT — error count" "pass"
-  elif [ "$ERR_COUNT" -lt 5 ]; then
-    warn  "5.1  $SHORT" "${ERR_COUNT} errors in last 100 lines (minor)"
+  isr-tasking-service \
+  collection-service \
+  allsource-analyst-service \
+  target-nomination-service \
+  commander-service \
+  execution-service \
+  bda-service \
+  develop-service \
+  state-service \
+  sse-bridge-service \
+  legal-review-service \
+  cot-gateway-service \
+  operator-service; do
+  CONTAINER=$(get_container "$svc")
+  if [ -n "$CONTAINER" ]; then
+    ERR_COUNT=$(podman logs "$CONTAINER" --tail 100 2>&1 \
+      | grep -cE " ERROR |Exception|FAILED" || true)
+    if [ "$ERR_COUNT" -eq 0 ]; then
+      check "5.1  $svc — error count" "pass"
+    elif [ "$ERR_COUNT" -lt 5 ]; then
+      warn  "5.1  $svc" "${ERR_COUNT} errors in last 100 lines (minor)"
+    else
+      check "5.1  $svc — error count" "${ERR_COUNT} errors in last 100 lines"
+    fi
   else
-    check "5.1  $SHORT — error count" "${ERR_COUNT} errors in last 100 lines"
+    warn "5.1  $svc" "container not found"
   fi
 done
 
@@ -493,7 +503,7 @@ fi
 
 # 5.3 RamaLama health + error check
 http_check "5.3  RamaLama /v1/models reachable" "http://localhost:8080/v1/models"
-RAMALAMA_ERRORS=$(podman logs copperclaw_ramalama_1 --tail 50 2>&1 \
+RAMALAMA_ERRORS=$(podman logs "$(get_container ramalama)" --tail 50 2>&1 \
   | grep -ciE "error" || true)
 if [ "$RAMALAMA_ERRORS" -eq 0 ]; then
   check "5.3  RamaLama log — error count" "pass"
