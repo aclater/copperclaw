@@ -5,7 +5,7 @@ COSMIC INDIGO // REL KESTREL COALITION // EXERCISE — EXERCISE — EXERCISE
 
 ## Executive Summary
 
-COPPERCLAW is a Red Hat–native, event-driven simulation of the F3EAD targeting
+COPPERCLAW is an event-driven simulation of the F3EAD targeting
 cycle (Find–Fix–Finish–Exploit–Assess–Develop) using LLM agents. It is designed
 as a reference implementation demonstrating sovereign, open-standards-based
 decision acceleration for NATO and UK MoD audiences.
@@ -18,10 +18,28 @@ decision acceleration for NATO and UK MoD audiences.
 | **DDAfD** (Digital Decision Accelerators for Defence) | 26 contracts Jan 2026, five lots, Anduril/Helsing/Faculty AI | Positionable as reference implementation for Lot responses on AI-assisted targeting |
 | **NATO MSS** (Palantir Maven Smart System) | Palantir Ontology on AWS Stockholm, SHAPE/JFC Brunssum | Sovereign alternative: same open standards (CoT, REST, Kafka), no Palantir, no AWS dependency |
 
-COPPERCLAW runs entirely on Red Hat OpenShift with AMQ Streams (Kafka) as the
+COPPERCLAW runs entirely on OpenShift with AMQ Streams (Kafka) as the
 event bus, speaks Cursor on Target (CoT) as its external interface, and keeps
-all LLM calls within a sovereign compute boundary. The architecture is derived
-from the Emergency Response Demo pattern (`github.com/Emergency-Response-Demo`).
+all LLM calls within a sovereign compute boundary.
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Role |
+|---|---|---|
+| Container platform | OpenShift | Target deployment |
+| Container runtime | Podman | Local development |
+| Messaging | AMQ Streams (Kafka) | Event bus, 14 topics |
+| Microservices | Quarkus 3.9 / Java 21 | 10 agent services |
+| LLM inference | RamaLama | Sovereign local inference |
+| LLM model | qwen2.5:14b | Default agent model |
+| State store | PostgreSQL | CycleState persistence |
+| Metrics | Micrometer + Prometheus | /q/metrics per service |
+| Identity | Keycloak 24 | Optional auth layer |
+| Base images | UBI9 | All container images |
+| External interface | CoT / UDP multicast | ATAK / ASGARD compat |
+| Frontend | React 18 / nginx | Operational display |
 
 ---
 
@@ -325,7 +343,7 @@ The following were added beyond the original Phase 2 schema library:
 ## LLM Backend Configuration
 
 COPPERCLAW defaults to local RamaLama inference.
-RamaLama is Red Hat's container-native LLM runtime —
+RamaLama is a container-native LLM runtime —
 models are OCI artifacts, runtime is rootless Podman,
 deployment target is OpenShift.
 

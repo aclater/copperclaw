@@ -22,6 +22,11 @@ services:
       # rootless Podman containers can't write there even with tmpfs.
       # GC events still appear on stdout.
       KAFKA_GC_LOG_OPTS: ""
+    labels:
+      io.copperclaw.service: zookeeper
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: zookeeper
+      org.opencontainers.image.version: "1.0.0"
 
   kafka:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
@@ -43,6 +48,11 @@ services:
       - /opt/kafka/logs
     environment:
       KAFKA_GC_LOG_OPTS: ""
+    labels:
+      io.copperclaw.service: kafka
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: kafka
+      org.opencontainers.image.version: "1.0.0"
 
   kafka-setup:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
@@ -66,6 +76,11 @@ services:
         done
         echo 'All 14 topics created.'
     restart: "no"
+    labels:
+      io.copperclaw.service: kafka-setup
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: kafka-setup
+      org.opencontainers.image.version: "1.0.0"
 
   postgres:
     image: docker.io/postgres:15
@@ -82,6 +97,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    labels:
+      io.copperclaw.service: postgres
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: postgres
+      org.opencontainers.image.version: "1.0.0"
 
   ramalama:
     image: quay.io/ramalama/ramalama:latest
@@ -92,17 +112,46 @@ services:
     networks:
       copperclaw:
         aliases: [ramalama]
-    # NVIDIA CUDA (current) — uses CDI device "nvidia.com/gpu=0":
     devices:
-      - "nvidia.com/gpu=0"
-    # AMD ROCm (future — replace devices block above with):
-    #   devices:
-    #     - /dev/kfd:/dev/kfd
-    #     - /dev/dri:/dev/dri
+      - nvidia.com/gpu=all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      CUDA_VISIBLE_DEVICES: "0"
     command:
       - sh
       - -c
-      - RAMALAMA_TRANSPORT=ollama ramalama serve qwen2.5:14b --port 8080 --host 0.0.0.0
+      - "ramalama serve ollama://qwen2.5:14b --port 8080 --host 0.0.0.0"
+    labels:
+      io.copperclaw.service: ramalama
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: ramalama
+      org.opencontainers.image.version: "1.0.0"
+
+  ramalama-pull:
+    image: quay.io/ramalama/ramalama:latest
+    depends_on: [ramalama]
+    networks:
+      copperclaw:
+        aliases: [ramalama-pull]
+    volumes:
+      - ramalama-models:/root/.local/share/ramalama
+      - /etc/cdi:/etc/cdi:ro
+    devices:
+      - nvidia.com/gpu=all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    command:
+      - sh
+      - -c
+      - "sleep 8 && ramalama pull ollama://qwen2.5:14b"
+    restart: "no"
+    labels:
+      io.copperclaw.service: ramalama-pull
+      io.copperclaw.component: infrastructure
+      org.opencontainers.image.title: ramalama-pull
+      org.opencontainers.image.version: "1.0.0"
 
   isr-tasking-service:
     build: agents/isr-tasking-service
@@ -115,6 +164,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: isr-tasking-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: isr-tasking-service
+      org.opencontainers.image.version: "1.0.0"
 
   collection-service:
     build: agents/collection-service
@@ -127,6 +181,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: collection-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: collection-service
+      org.opencontainers.image.version: "1.0.0"
 
   allsource-analyst-service:
     build: agents/allsource-analyst-service
@@ -139,6 +198,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: allsource-analyst-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: allsource-analyst-service
+      org.opencontainers.image.version: "1.0.0"
 
   target-nomination-service:
     build: agents/target-nomination-service
@@ -151,6 +215,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: target-nomination-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: target-nomination-service
+      org.opencontainers.image.version: "1.0.0"
 
   legal-review-service:
     build: agents/legal-review-service
@@ -163,6 +232,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: legal-review-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: legal-review-service
+      org.opencontainers.image.version: "1.0.0"
 
   commander-service:
     build: agents/commander-service
@@ -175,6 +249,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: commander-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: commander-service
+      org.opencontainers.image.version: "1.0.0"
 
   execution-service:
     build: agents/execution-service
@@ -187,6 +266,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: execution-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: execution-service
+      org.opencontainers.image.version: "1.0.0"
 
   bda-service:
     build: agents/bda-service
@@ -199,6 +283,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: bda-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: bda-service
+      org.opencontainers.image.version: "1.0.0"
 
   develop-service:
     build: agents/develop-service
@@ -211,6 +300,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:14b}
       RAMALAMA_BASE_URL: http://ramalama:8080/v1
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    labels:
+      io.copperclaw.service: develop-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: develop-service
+      org.opencontainers.image.version: "1.0.0"
 
   cot-gateway-service:
     build: agents/cot-gateway-service
@@ -221,6 +315,11 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       COT_SIMULATION_MODE: ${COT_SIMULATION_MODE:-true}
       COT_SIMULATION_INTERVAL_SECONDS: ${COT_SIMULATION_INTERVAL_SECONDS:-30}
+    labels:
+      io.copperclaw.service: cot-gateway-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: cot-gateway-service
+      org.opencontainers.image.version: "1.0.0"
 
   state-service:
     build: state-service
@@ -238,6 +337,11 @@ services:
       DB_USER: copperclaw
       DB_PASSWORD: copperclaw
       DB_NAME: copperclaw
+    labels:
+      io.copperclaw.service: state-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: state-service
+      org.opencontainers.image.version: "1.0.0"
 
   sse-bridge-service:
     build: sse-bridge-service
@@ -246,6 +350,11 @@ services:
     networks: [copperclaw]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    labels:
+      io.copperclaw.service: sse-bridge-service
+      io.copperclaw.component: f3ead-agent
+      org.opencontainers.image.title: sse-bridge-service
+      org.opencontainers.image.version: "1.0.0"
 
   operator-service:
     build: operator-service
@@ -260,6 +369,11 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       STATE_SERVICE_URL: http://state-service:8089
       SSE_BRIDGE_URL: http://sse-bridge-service:8090
+    labels:
+      io.copperclaw.service: operator-service
+      io.copperclaw.component: operator
+      org.opencontainers.image.title: operator-service
+      org.opencontainers.image.version: "1.0.0"
 
   frontend:
     build: frontend
@@ -269,3 +383,50 @@ services:
     environment:
       VITE_OPERATOR_URL: http://operator-service:8000
       VITE_SSE_URL: http://sse-bridge-service:8090
+    labels:
+      io.copperclaw.service: frontend
+      io.copperclaw.component: frontend
+      org.opencontainers.image.title: frontend
+      org.opencontainers.image.version: "1.0.0"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    ports: ["8180:8080"]
+    networks: [copperclaw]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: copperclaw
+      KC_DB: dev-mem
+    command: start-dev
+    profiles: [auth]
+    labels:
+      io.copperclaw.service: keycloak
+      io.copperclaw.component: identity
+      org.opencontainers.image.title: keycloak
+      org.opencontainers.image.version: "1.0.0"
+
+  prometheus:
+    image: quay.io/prometheus/prometheus:latest
+    ports: ["9090:9090"]
+    networks: [copperclaw]
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    profiles: [observability]
+    labels:
+      io.copperclaw.service: prometheus
+      io.copperclaw.component: observability
+      org.opencontainers.image.title: prometheus
+      org.opencontainers.image.version: "1.0.0"
+
+  grafana:
+    image: docker.io/grafana/grafana:latest
+    ports: ["3001:3000"]
+    networks: [copperclaw]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: copperclaw
+    profiles: [observability]
+    labels:
+      io.copperclaw.service: grafana
+      io.copperclaw.component: observability
+      org.opencontainers.image.title: grafana
+      org.opencontainers.image.version: "1.0.0"

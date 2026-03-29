@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: copperclaw-agents
+    static_configs:
+      - targets:
+          - isr-tasking-service:8081
+          - collection-service:8082
+          - allsource-analyst-service:8083
+          - target-nomination-service:8084
+          - commander-service:8085
+          - execution-service:8086
+          - bda-service:8087
+          - develop-service:8088
+          - state-service:8089
+          - sse-bridge-service:8090
+          - legal-review-service:8091
+          - cot-gateway-service:8092
+        labels:
+          app: copperclaw
+    metrics_path: /q/metrics

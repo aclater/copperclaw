@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.redhat.copperclaw</groupId>
+  <groupId>com.copperclaw</groupId>
   <artifactId>copperclaw-parent</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>COPPERCLAW Parent POM</name>
-  <description>OPERATION COPPERCLAW — F3EAD targeting cycle simulation — Red Hat backend</description>
+  <description>OPERATION COPPERCLAW — F3EAD targeting cycle simulation</description>
 
   <modules>
     <module>agents/isr-tasking-service</module>
@@ -67,10 +67,11 @@
 
       <!-- Shared COPPERCLAW schemas -->
       <dependency>
-        <groupId>com.redhat.copperclaw</groupId>
+        <groupId>com.copperclaw</groupId>
         <artifactId>copperclaw-shared</artifactId>
         <version>${copperclaw.shared.version}</version>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 
