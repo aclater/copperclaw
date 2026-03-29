@@ -76,6 +76,7 @@
       <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
+        <version>${quarkus.platform.version}</version>
       </dependency>
 
     </dependencies>
