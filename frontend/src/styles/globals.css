@@ -47,3 +47,23 @@ body {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
 }
+/* SVG-safe target pulse — animates opacity for HOLD rings */
+@keyframes tpulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+/* BDA assessment pulse */
+@keyframes bda-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+/* DOMEX captured ring expands and fades */
+@keyframes domex-ring {
+  0%   { r: 10px; opacity: 0.8; }
+  100% { r: 28px; opacity: 0; }
+}
+/* Confirmed snap ring shrinks back */
+@keyframes snap-ring {
+  0%   { r: 14px; }
+  100% { r: 10px; }
+}

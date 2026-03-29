@@ -1,12 +1,19 @@
 import type { TargetState } from '../types'
 import { TARGETS, ISR_TRACKS } from '../config/targets'
 import { TargetMarker } from './TargetMarker'
+import { useTargetPositions } from '../hooks/useTargetPositions'
+import type { TargetPosition } from '../hooks/useTargetPositions'
 
 interface TacticalMapProps {
   targets: TargetState[]
 }
 
+const POSITION_FALLBACK = (x: number, y: number): TargetPosition => ({
+  x, y, uncertainty: 0, isConfirmed: false, lastConfirmedAt: 0, trail: [],
+})
+
 export function TacticalMap({ targets }: TacticalMapProps) {
+  const positions = useTargetPositions(targets, TARGETS)
   const getTargetState = (id: string) =>
     targets.find(t => t.target_id === id)
 
@@ -81,12 +88,19 @@ export function TacticalMap({ targets }: TacticalMapProps) {
           </g>
         ))}
 
-        {/* Target markers */}
-        {TARGETS.map(cfg => (
-          <g key={cfg.id} transform={`translate(${cfg.x},${cfg.y})`}>
-            <TargetMarker config={cfg} state={getTargetState(cfg.id)} />
-          </g>
-        ))}
+        {/* Target markers — translated to animated position from hook */}
+        {TARGETS.map(cfg => {
+          const pos = positions.get(cfg.id) ?? POSITION_FALLBACK(cfg.x, cfg.y)
+          return (
+            <g key={cfg.id} transform={`translate(${pos.x.toFixed(1)},${pos.y.toFixed(1)})`}>
+              <TargetMarker
+                config={cfg}
+                state={getTargetState(cfg.id)}
+                position={pos}
+              />
+            </g>
+          )
+        })}
       </svg>
     </div>
   )

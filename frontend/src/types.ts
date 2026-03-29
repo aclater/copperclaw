@@ -2,6 +2,12 @@ export type TargetId =
   | 'TGT-ECHO-001' | 'TGT-ECHO-002' | 'TGT-GAMMA-001'
   | 'TGT-DELTA-001' | 'TGT-GAMMA-002'
 
+export type TargetOutcome =
+  | 'NEUTRALIZED'
+  | 'CAPTURED'
+  | 'PARTIAL_EFFECT'
+  | 'REENGAGEMENT_REQUIRED'
+
 export type CyclePhase =
   | 'FIND' | 'FIX' | 'FINISH' | 'EXPLOIT' | 'ASSESS' | 'DEVELOP'
   | 'HOLD' | 'COMPLETE' | 'IDLE'
@@ -32,6 +38,9 @@ export interface TargetState {
   pir_number: string
   legal_cleared: boolean
   hold_reason?: string
+  outcome?: TargetOutcome
+  last_confirmed_zulu?: string  // ISO timestamp of last collection report fix
+  position_uncertainty?: number // 0-1, grows over time
 }
 
 export interface PirSatisfaction {
