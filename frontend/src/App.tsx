@@ -4,7 +4,7 @@ import { Shell } from './components/Shell'
 
 export default function App() {
   const { state, connected } = useCycleState()
-  const { input, setInput, transmit, sending, messages } = useOperator()
+  const { input, setInput, transmit, sending, messages, appendMessage } = useOperator()
 
   return (
     <Shell
@@ -15,6 +15,7 @@ export default function App() {
       transmit={transmit}
       sending={sending}
       messages={messages}
+      appendMessage={appendMessage}
     />
   )
 }

@@ -6,6 +6,7 @@ export interface TargetMarkerProps {
   config: TargetConfig
   state?: TargetState
   position: TargetPosition
+  isSelected?: boolean
 }
 
 // Badge width — sized to codename, min 52px
@@ -106,15 +107,28 @@ function PhaseLabel({ label, color }: { label: string; color: string }) {
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
-export function TargetMarker({ config, state, position }: TargetMarkerProps) {
+export function TargetMarker({ config, state, position, isSelected = false }: TargetMarkerProps) {
   const vs = resolveVisualState(state, config, position)
   const { trail } = position
   const codename = config.codename
+
+  // ── Selection ring overlay ─────────────────────────────────────────────
+  const selectionRing = isSelected ? (
+    <circle
+      r={14}
+      fill="none"
+      stroke="#58a6ff"
+      strokeWidth={2.5}
+      className="tgt-selected-ring"
+      style={{ filter: 'drop-shadow(0 0 3px rgba(88,166,255,0.25))' }}
+    />
+  ) : null
 
   // ── NEUTRALIZED ghost ─────────────────────────────────────────────────
   if (vs === 'NEUTRALIZED') {
     return (
       <g opacity={0.4}>
+        {selectionRing}
         <Badge codename={codename} color="#484f57" bg="#161b22" />
         <circle r={10} fill="none" stroke="#484f57" strokeWidth={1.5} strokeDasharray="3 3" />
         <line x1={-4} y1={-4} x2={4} y2={4} stroke="#484f57" strokeWidth={1.5} />
@@ -128,6 +142,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'CAPTURED') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#d29922" bg="#2d1e00" />
         {/* Expanding DOMEX ring */}
         <circle fill="none" stroke="#d29922" strokeWidth={1.5}>
@@ -158,6 +173,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
     // Half circumference ≈ 31.4 of total ≈ 62.8
     return (
       <g opacity={0.65}>
+        {selectionRing}
         <Badge codename={codename} color="#d29922" bg="#2d1e00" />
         <circle r={10} fill="none" stroke="#d29922" strokeWidth={2} strokeDasharray="31 32" />
         <circle r={3.5} fill="#d29922" opacity={0.5} />
@@ -170,6 +186,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'REENGAGEMENT_REQUIRED') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#f85149" bg="#2d0e0d" />
         <circle r={10} fill="none" stroke="#f85149" strokeWidth={2}>
           <animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite" />
@@ -186,6 +203,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'EXECUTING') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#f85149" bg="#2d0e0d" />
         <circle r={14} fill="none" stroke="#f85149" strokeWidth={2} />
         <circle r={3.5} fill="#f85149">
@@ -203,6 +221,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'BDA_IN_PROGRESS') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#58a6ff" bg="#0d1f3c" />
         <circle r={10} fill="none" stroke="#58a6ff" strokeWidth={2}>
           <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
@@ -217,6 +236,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'CONFIRMED') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#3fb950" bg="#0d2010" />
         {/* Ring animates from 14 back to 10 over 400ms */}
         <circle
@@ -237,6 +257,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
   if (vs === 'HOLD') {
     return (
       <g>
+        {selectionRing}
         <Badge codename={codename} color="#d29922" bg="#2d1e00" />
         <circle r={10} fill="none" stroke="#d29922" strokeWidth={2}>
           <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite" />
@@ -257,6 +278,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
 
     return (
       <g>
+        {selectionRing}
         {/* Trail dots (rendered behind marker) */}
         {trail.map((pt, i) => (
           <circle
@@ -301,6 +323,7 @@ export function TargetMarker({ config, state, position }: TargetMarkerProps) {
 
   return (
     <g>
+      {selectionRing}
       <Badge codename={codename} color={color} bg={badgeBg} />
       <circle r={10} fill="none" stroke={color} strokeWidth={2} />
       <circle r={3.5} fill={color} />

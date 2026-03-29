@@ -1,9 +1,10 @@
-import type { CycleState } from '../types'
-import type { OperatorMessage } from '../types'
+import { useCallback } from 'react'
+import type { CycleState, OperatorMessage } from '../types'
 import { TopBar } from './TopBar'
 import { MetricCard } from './MetricCard'
 import { ConfidenceRing } from './ConfidenceRing'
-import { PirPanel } from './PirPanel'
+import { CcirPanel } from './CcirPanel'
+import { DomainRadar } from './DomainRadar'
 import { TacticalMap } from './TacticalMap'
 import { HoldStrip } from './HoldStrip'
 import { DecisionLog } from './DecisionLog'
@@ -19,11 +20,12 @@ interface ShellProps {
   transmit: () => void
   sending: boolean
   messages: OperatorMessage[]
+  appendMessage: (msg: OperatorMessage) => void
 }
 
 export function Shell({
   state, connected,
-  operatorInput, setOperatorInput, transmit, sending, messages,
+  operatorInput, setOperatorInput, transmit, sending, messages, appendMessage,
 }: ShellProps) {
   const awaitingCount = state.awaiting_commander ? 1 : 0
   const awaitingTarget = state.active_target_codename ?? '—'
@@ -32,6 +34,14 @@ export function Shell({
   ).length
   const primaryPir = state.pir_satisfaction.find(p => p.pir_id === 'PIR-001')
   const holdTarget = state.targets.find(t => t.target_id === state.hold_target_id)
+
+  const handleMapAction = useCallback((msg: string) => {
+    appendMessage({
+      role: 'operator' as const,
+      content: msg,
+      timestamp_zulu: new Date().toISOString(),
+    })
+  }, [appendMessage])
 
   return (
     <div style={{
@@ -77,14 +87,22 @@ export function Shell({
               'var(--red)'
             }
           />
-          <PirPanel pirs={state.pir_satisfaction} />
+          <DomainRadar />
+          <CcirPanel
+            pirs={state.pir_satisfaction}
+            recentCollection={state.recent_collection}
+          />
           <DecisionLog entries={state.commander_log} />
         </div>
 
         {/* Center column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflow: 'hidden', minHeight: 0 }}>
           <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-            <TacticalMap targets={state.targets} />
+            <TacticalMap
+              targets={state.targets}
+              cycleState={state}
+              onActionExecuted={handleMapAction}
+            />
           </div>
           <HoldStrip
             visible={state.awaiting_commander}

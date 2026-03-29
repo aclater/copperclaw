@@ -45,5 +45,9 @@ export function useOperator() {
     }
   }, [input, sending])
 
-  return { input, setInput, transmit, sending, messages }
+  const appendMessage = useCallback((msg: OperatorMessage) => {
+    setMessages(prev => [...prev, msg])
+  }, [])
+
+  return { input, setInput, transmit, sending, messages, appendMessage }
 }

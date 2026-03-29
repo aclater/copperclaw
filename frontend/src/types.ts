@@ -87,3 +87,30 @@ export interface OperatorMessage {
   content: string
   timestamp_zulu: string
 }
+
+export type TargetAction =
+  | 'authorize_capture'
+  | 'authorize_strike'
+  | 'hold_target'
+  | 'retask_isr'
+  | 'request_bda'
+  | 'view_tnp'
+  | 'view_intel'
+  | 'escalate_urgent'
+
+export interface TargetActionDef {
+  id: TargetAction
+  label: string
+  group: 'cycle' | 'isr' | 'info' | 'escalate'
+  color: 'green' | 'amber' | 'blue' | 'red' | 'gray'
+  requiresConfirm: boolean
+  requiresReason: boolean
+  lockedReason?: string
+}
+
+export interface SelectedTarget {
+  targetId: TargetId
+  codename: string
+  state?: TargetState
+  menuPosition: { x: number; y: number }
+}
