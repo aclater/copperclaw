@@ -17,6 +17,11 @@ services:
         aliases: [zookeeper]
     tmpfs:
       - /opt/kafka/logs
+    environment:
+      # Disable GC file logging — /opt/kafka/logs is root-owned in the image;
+      # rootless Podman containers can't write there even with tmpfs.
+      # GC events still appear on stdout.
+      KAFKA_GC_LOG_OPTS: ""
 
   kafka:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
@@ -36,6 +41,8 @@ services:
         aliases: [kafka]
     tmpfs:
       - /opt/kafka/logs
+    environment:
+      KAFKA_GC_LOG_OPTS: ""
 
   kafka-setup:
     image: quay.io/strimzi/kafka:latest-kafka-3.7.0
@@ -45,6 +52,8 @@ services:
         aliases: [kafka-setup]
     tmpfs:
       - /opt/kafka/logs
+    environment:
+      KAFKA_GC_LOG_OPTS: ""
     command:
       - sh
       - -c
