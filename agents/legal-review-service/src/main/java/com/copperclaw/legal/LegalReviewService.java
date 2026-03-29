@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -76,6 +77,7 @@ public class LegalReviewService {
         }
     }
 
+    @Blocking
     @Incoming("nomination-in")
     public void processTnp(String message) {
         try {

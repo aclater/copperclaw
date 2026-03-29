@@ -10,6 +10,7 @@ import com.copperclaw.shared.records.CommanderLogEntry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -86,6 +87,7 @@ public class CommanderService {
      * Do NOT call Claude. Do NOT emit to authorization-out.
      * The cycle is paused here until the operator provides input.
      */
+    @Blocking
     @Incoming("legal-review-in")
     public void processLegalReview(String message) {
         try {
@@ -129,6 +131,7 @@ public class CommanderService {
      * Phase 2: Operator command received (AuthorizeTargetTool or HoldTargetTool).
      * Retrieve pending LegalReviewAssessment, call Claude, emit EngagementAuthorization.
      */
+    @Blocking
     @Incoming("operator-commands-in")
     public void processOperatorCommand(String message) {
         try {
