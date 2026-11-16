@@ -4,6 +4,56 @@ A simulation of the **F3EAD targeting cycle** (Find–Fix–Finish–Exploit–A
 
 ---
 
+## Quick start
+
+You need Linux with an NVIDIA or AMD GPU (or a Mac with Apple Silicon), Java 21 JDK, Maven 3.9 or later, git,
+Podman and podman-compose (or Docker with Compose). Without a GPU, see [Platform Compatibility](#platform-compatibility).
+
+1. Get the code and build the shared library and the Quarkus services:
+
+   ```
+   git clone https://github.com/aclater/copperclaw.git
+   cd copperclaw
+   mvn install -f shared-java/pom.xml
+   mvn package -f parent-pom.xml -DskipTests
+   ```
+
+2. Create the configuration. The defaults use a local RamaLama model and synthetic CoT events:
+
+   ```
+   cp .env.example .env
+   ```
+
+3. Start the stack in the background. `start.sh` detects your platform, writes a compose override if needed, and
+   passes its arguments to the compose `up` command. The first start pulls a 14B model and builds every image:
+
+   ```
+   ./scripts/start.sh -d
+   ```
+
+4. Check all 13 service health endpoints and the end-to-end Kafka flow:
+
+   ```
+   ./scripts/smoke-test.sh
+   ```
+
+5. Open the frontend at http://localhost:3000.
+
+Steps 3 to 5 have not yet been tested end to end on a clean system.
+
+| Interface | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Operator API | http://localhost:8000 |
+| Kafka | localhost:9092 |
+| PostgreSQL | localhost:5432 |
+| RamaLama (LLM) | http://localhost:8080/v1 |
+
+To use Anthropic Claude instead of a local model, set `LLM_BACKEND=anthropic` and `ANTHROPIC_API_KEY` in `.env`
+(see [Configuration](#configuration)). On Linux with NVIDIA, `podman-compose up` without `start.sh` also works.
+
+---
+
 ## Overview
 
 COPPERCLAW orchestrates 13 microservices across the full targeting workflow:
@@ -73,69 +123,6 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full reference.
 > **macOS note:** The default PostgreSQL image (`registry.access.redhat.com/rhel9/postgresql-15`) has no ARM64 variant. `start.sh` swaps it for `postgres:15` (Docker Hub official) on all Mac platforms automatically.
 
 > **Framework Desktop note:** The Framework Desktop uses AMD Ryzen with integrated or discrete AMD graphics. `start.sh` will detect `/dev/kfd` or `rocm-smi` and configure the ROCm path automatically.
-
----
-
-## Prerequisites
-
-- Java 21 JDK
-- Maven 3.9+
-- Python 3.11+
-- Podman + podman-compose, or Docker Desktop
-- `ANTHROPIC_API_KEY` — optional; only required if `LLM_BACKEND=anthropic`
-
----
-
-## Getting Started
-
-### 1. Build
-
-```bash
-# Install shared Java library
-mvn install -f shared-java/pom.xml
-
-# Build all Quarkus services
-mvn package -f parent-pom.xml -DskipTests
-```
-
-### 2. Configure
-
-```bash
-cp .env.example .env
-# Edit .env — set LLM_BACKEND, model, and optionally ANTHROPIC_API_KEY
-```
-
-### 3. Run
-
-```bash
-./scripts/start.sh
-```
-
-`start.sh` detects your platform, generates a compose override if needed, and calls the appropriate compose runtime. Pass any `podman-compose up` flags through — e.g. `./scripts/start.sh --build` or `./scripts/start.sh -d`.
-
-Alternatively, run directly if you are on Linux with NVIDIA:
-
-```bash
-podman-compose up
-```
-
-### 4. Access
-
-| Interface | URL |
-|---|---|
-| Frontend | http://localhost:3000 |
-| Operator API | http://localhost:8000 |
-| Kafka | localhost:9092 |
-| PostgreSQL | localhost:5432 |
-| RamaLama (LLM) | http://localhost:8080/v1 |
-
-### 5. Smoke test
-
-```bash
-./scripts/smoke-test.sh
-```
-
-Validates all 13 service health endpoints and the end-to-end Kafka flow.
 
 ---
 
